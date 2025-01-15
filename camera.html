@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מצלמת הבריכה</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            text-align: center;
+        }
+        .button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .video-container {
+            margin: 20px auto;
+            max-width: 800px;
+            width: 100%;
+        }
+        video {
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>מצלמת הבריכה</h1>
+    <button class="button" onclick="window.location.href='main.html'">חזרה למסך ראשי</button>
+    
+    <div class="video-container">
+        <video id="poolCamera" controls autoplay loop>
+            <source src="https://v3.cdnpk.net/videvo_files/video/premium/video0238/large_watermarked/06_elizabeth_pool_02_swimming_preview.mp4" type="video/mp4">
+            הדפדפן שלך אינו תומך בתגית וידאו.
+        </video>
+    </div>
+
+    <script>
+        // בדיקת התחברות
+        if (!sessionStorage.getItem('currentUser')) {
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>

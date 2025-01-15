@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>כניסה למערכת</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f2f5;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+        }
+        .button:hover {
+            background-color: #45a049;
+        }
+        .toggle-form {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .error-message {
+            color: red;
+            margin-top: 10px;
+            text-align: center;
+            display: none;
+        }
+        #signupForm {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="loginForm">
+            <h2>התחברות למערכת</h2>
+            <div class="form-group">
+                <label for="username">שם משתמש:</label>
+                <input type="text" id="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">סיסמה:</label>
+                <input type="password" id="password" required>
+            </div>
+            <button class="button" onclick="login()">התחבר</button>
+            <div class="toggle-form">
+                <a href="#" onclick="toggleForms()">להרשמה לחץ כאן</a>
+            </div>
+            <div id="loginError" class="error-message">שם משתמש או סיסמה שגויים</div>
+        </div>
+
+        <div id="signupForm">
+            <h2>הרשמה למערכת</h2>
+            <div class="form-group">
+                <label for="newUsername">שם משתמש:</label>
+                <input type="text" id="newUsername" required>
+            </div>
+            <div class="form-group">
+                <label for="newPassword">סיסמה:</label>
+                <input type="password" id="newPassword" required>
+            </div>
+            <button class="button" onclick="signup()">הרשם</button>
+            <div class="toggle-form">
+                <a href="#" onclick="toggleForms()">להתחברות לחץ כאן</a>
+            </div>
+            <div id="signupError" class="error-message">שם המשתמש כבר קיים במערכת</div>
+        </div>
+    </div>
+
+    <script>
+        // משתמשים קבועים במערכת
+        const predefinedUsers = {
+            'shaked': { password: '12345', isAdmin: true },
+            'shira': { password: '12345', isAdmin: false },
+            'yael': { password: '12345', isAdmin: false },
+            'lital': { password: '12345', isAdmin: false },
+            'moi': { password: '12345', isAdmin: false }
+        };
+
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('loginError');
+
+            const user = predefinedUsers[username];
+            if (user && user.password === password) {
+                // שמירת פרטי המשתמש
+                sessionStorage.setItem('currentUser', username);
+                sessionStorage.setItem('isAdmin', user.isAdmin);
+                // מעבר לדף הראשי
+                window.location.href = 'main.html';
+            } else {
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        function signup() {
+            const username = document.getElementById('newUsername').value;
+            const password = document.getElementById('newPassword').value;
+            const errorDiv = document.getElementById('signupError');
+
+            if (predefinedUsers[username]) {
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            // הוספת המשתמש החדש
+            predefinedUsers[username] = {
+                password: password,
+                isAdmin: false
+            };
+
+            // מעבר לטופס ההתחברות
+            toggleForms();
+            document.getElementById('username').value = username;
+            document.getElementById('password').value = password;
+        }
+
+        function toggleForms() {
+            const loginForm = document.getElementById('loginForm');
+            const signupForm = document.getElementById('signupForm');
+            const loginError = document.getElementById('loginError');
+            const signupError = document.getElementById('signupError');
+
+            loginForm.style.display = loginForm.style.display === 'none' ? 'block' : 'none';
+            signupForm.style.display = signupForm.style.display === 'none' ? 'block' : 'none';
+            loginError.style.display = 'none';
+            signupError.style.display = 'none';
+        }
+    </script>
+</body>
+</html>

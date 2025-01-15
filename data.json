@@ -1,0 +1,8 @@
+{
+    "drownings_summary": [
+      { "user_name": "משתמש 1", "drowning_time": "2025-01-06T14:23:45", "floor_lift_required": true },
+      { "user_name": "משתמש 2", "drowning_time": "2025-01-06T16:10:12", "floor_lift_required": false },
+      { "user_name": "משתמש 3", "drowning_time": "2025-01-07T10:15:30", "floor_lift_required": true },
+      { "user_name": "משתמש 4", "drowning_time": "2025-01-07T11:05:20", "floor_lift_required": false }
+    ]
+}

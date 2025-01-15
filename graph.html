@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>גרף טביעות</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+        .button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        canvas {
+            border: 1px solid #ddd;
+            margin-top: 20px;
+            border-radius: 4px;
+        }
+        .stats-container {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px auto;
+            max-width: 300px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .total-drownings {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin: 10px 0;
+        }
+        .no-data-message {
+            font-style: italic;
+            color: #666;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>גרף טביעות ביחס לזמן</h1>
+    <div>
+        <button class="button" onclick="backToMain()">חזרה למסך ראשי</button>
+    </div>
+
+    <div class="stats-container">
+        <h3>סטטיסטיקה</h3>
+        <div class="total-drownings" id="totalDrownings">סה"כ טביעות: 0</div>
+    </div>
+    
+    <canvas id="drowningChart" width="800" height="400"></canvas>
+
+    <script>
+        // בדיקת התחברות
+        if (!sessionStorage.getItem('currentUser')) {
+            window.location.href = 'index.html';
+        }
+
+        function formatTime(date) {
+            return date.getHours().toString().padStart(2, '0') + ':' +
+                   date.getMinutes().toString().padStart(2, '0');
+        }
+
+        function calculateTotalDrownings() {
+            const drowningHistory = JSON.parse(sessionStorage.getItem('drowningHistory') || '[]');
+            return drowningHistory.length;
+        }
+
+        function updateTotalDrownings() {
+            const total = calculateTotalDrownings();
+            document.getElementById('totalDrownings').textContent = `סה"כ טביעות: ${total}`;
+        }
+
+        function drawGraph() {
+            const drowningHistory = JSON.parse(sessionStorage.getItem('drowningHistory') || '[]');
+            const canvas = document.getElementById("drowningChart");
+            const ctx = canvas.getContext("2d");
+            
+            // הגדרות בסיסיות
+            const width = canvas.width;
+            const height = canvas.height;
+            const padding = 50;
+            const graphWidth = width - 2 * padding;
+            const graphHeight = height - 2 * padding;
+
+            // ניקוי הקנבס
+            ctx.clearRect(0, 0, width, height);
+
+            // ציור צירים תמיד
+            ctx.beginPath();
+            ctx.moveTo(padding, height - padding);
+            ctx.lineTo(padding, padding);
+            ctx.lineTo(width - padding, height - padding);
+            ctx.stroke();
+
+            // ציור ערכי ציר Y
+            ctx.textAlign = "right";
+            ctx.textBaseline = "middle";
+            for (let i = 0; i <= 5; i++) {
+                const y = height - padding - (i * graphHeight / 5);
+                ctx.fillText(i, padding - 10, y);
+                ctx.beginPath();
+                ctx.moveTo(padding - 5, y);
+                ctx.lineTo(padding + 5, y);
+                ctx.stroke();
+            }
+
+            if (drowningHistory.length === 0) {
+                // הצגת הודעה כשאין נתונים
+                ctx.textAlign = "center";
+                ctx.fillText("אין טביעות להצגה", width / 2, height / 2);
+                return;
+            }
+
+            // מיון לפי זמן
+            drowningHistory.sort((a, b) => new Date(a.time) - new Date(b.time));
+
+            // יצירת מקטעי זמן של 5 דקות
+            const timeSegments = {};
+            const firstTime = new Date(drowningHistory[0].time);
+            const lastTime = new Date(drowningHistory[drowningHistory.length - 1].time);
+            
+            // יצירת מקטעי זמן ריקים
+            let currentTime = new Date(firstTime);
+            while (currentTime <= lastTime) {
+                const timeKey = formatTime(currentTime);
+                timeSegments[timeKey] = 0;
+                currentTime.setMinutes(currentTime.getMinutes() + 5);
+            }
+
+            // ספירת טביעות בכל מקטע זמן
+            drowningHistory.forEach(drowning => {
+                const drowningTime = new Date(drowning.time);
+                const timeKey = formatTime(drowningTime);
+                timeSegments[timeKey] = (timeSegments[timeKey] || 0) + 1;
+            });
+
+            // הכנת נתונים לגרף
+            const labels = Object.keys(timeSegments);
+            const values = Object.values(timeSegments);
+
+            // ציור ערכי ציר X
+            ctx.textAlign = "center";
+            ctx.textBaseline = "top";
+            labels.forEach((label, index) => {
+                if (index % 2 === 0) {
+                    const x = padding + index * (graphWidth / (labels.length - 1));
+                    ctx.save();
+                    ctx.translate(x, height - padding + 10);
+                    ctx.rotate(Math.PI / 4);
+                    ctx.fillText(label, 0, 0);
+                    ctx.restore();
+                }
+            });
+
+            // ציור הגרף
+            const maxValue = Math.max(...values, 5);
+            const scaleY = graphHeight / maxValue;
+
+            ctx.beginPath();
+            ctx.strokeStyle = "blue";
+            ctx.lineWidth = 2;
+
+            values.forEach((value, index) => {
+                const x = padding + index * (graphWidth / (labels.length - 1));
+                const y = height - padding - value * scaleY;
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            ctx.stroke();
+
+            // ציור נקודות
+            ctx.fillStyle = "red";
+            values.forEach((value, index) => {
+                const x = padding + index * (graphWidth / (labels.length - 1));
+                const y = height - padding - value * scaleY;
+                ctx.beginPath();
+                ctx.arc(x, y, 5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function backToMain() {
+            if (sessionStorage.getItem('currentUser')) {
+                window.location.href = 'main.html';
+            } else {
+                window.location.href = 'index.html';
+            }
+        }
+
+        // ציור ראשוני של הגרף ועדכון הסטטיסטיקה
+        drawGraph();
+        updateTotalDrownings();
+
+        // עדכון הגרף והסטטיסטיקה כל 5 שניות
+        setInterval(() => {
+            drawGraph();
+            updateTotalDrownings();
+        }, 5000);
+    </script>
+</body>
+</html>
