@@ -95,35 +95,45 @@
                 <label for="newPassword">סיסמה:</label>
                 <input type="password" id="newPassword" required>
             </div>
+            <div class="form-group">
+                <label for="age">גיל:</label>
+                <input type="number" id="age" required min="1" max="120">
+            </div>
+            <div class="form-group">
+                <label for="confirmPassword">אימות סיסמה:</label>
+                <input type="password" id="confirmPassword" required>
+            </div>
             <button class="button" onclick="signup()">הרשם</button>
             <div class="toggle-form">
                 <a href="#" onclick="toggleForms()">להתחברות לחץ כאן</a>
             </div>
-            <div id="signupError" class="error-message">שם המשתמש כבר קיים במערכת</div>
+            <div id="signupError" class="error-message"></div>
         </div>
     </div>
 
     <script>
-        // משתמשים קבועים במערכת
-        const predefinedUsers = {
-            'shaked': { password: '12345', isAdmin: true },
-            'shira': { password: '12345', isAdmin: false },
-            'yael': { password: '12345', isAdmin: false },
-            'lital': { password: '12345', isAdmin: false },
-            'moi': { password: '12345', isAdmin: false }
-        };
+        // שמירת המשתמשים ב-localStorage
+        if (!localStorage.getItem('users')) {
+            const initialUsers = {
+                'shaked': { password: '12345', isAdmin: true },
+                'shira': { password: '12345', isAdmin: false },
+                'yael': { password: '12345', isAdmin: false },
+                'lital': { password: '12345', isAdmin: false },
+                'moi': { password: '12345', isAdmin: false }
+            };
+            localStorage.setItem('users', JSON.stringify(initialUsers));
+        }
 
         function login() {
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             const errorDiv = document.getElementById('loginError');
+            const users = JSON.parse(localStorage.getItem('users'));
 
-            const user = predefinedUsers[username];
+            const user = users[username];
             if (user && user.password === password) {
-                // שמירת פרטי המשתמש
                 sessionStorage.setItem('currentUser', username);
                 sessionStorage.setItem('isAdmin', user.isAdmin);
-                // מעבר לדף הראשי
                 window.location.href = 'main.html';
             } else {
                 errorDiv.style.display = 'block';
@@ -131,38 +141,71 @@
         }
 
         function signup() {
-            const username = document.getElementById('newUsername').value;
-            const password = document.getElementById('newPassword').value;
-            const errorDiv = document.getElementById('signupError');
+    const username = document.getElementById('newUsername').value;
+    const password = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    const age = parseInt(document.getElementById('age').value);
+    const errorDiv = document.getElementById('signupError');
+    const users = JSON.parse(localStorage.getItem('users'));
 
-            if (predefinedUsers[username]) {
-                errorDiv.style.display = 'block';
-                return;
-            }
+    // בדיקות תקינות
+    if (username.length < 3) {
+        errorDiv.textContent = 'שם המשתמש חייב להכיל לפחות 3 תווים';
+        errorDiv.style.display = 'block';
+        return;
+    }
 
-            // הוספת המשתמש החדש
-            predefinedUsers[username] = {
-                password: password,
-                isAdmin: false
-            };
+    if (users[username]) {
+        errorDiv.textContent = 'שם המשתמש כבר קיים במערכת';
+        errorDiv.style.display = 'block';
+        return;
+    }
 
-            // מעבר לטופס ההתחברות
-            toggleForms();
-            document.getElementById('username').value = username;
-            document.getElementById('password').value = password;
-        }
+    if (password.length < 5) {
+        errorDiv.textContent = 'הסיסמה חייבת להכיל לפחות 5 תווים';
+        errorDiv.style.display = 'block';
+        return;
+    }
 
-        function toggleForms() {
-            const loginForm = document.getElementById('loginForm');
-            const signupForm = document.getElementById('signupForm');
-            const loginError = document.getElementById('loginError');
-            const signupError = document.getElementById('signupError');
+    if (password !== confirmPassword) {
+        errorDiv.textContent = 'הסיסמאות אינן תואמות';
+        errorDiv.style.display = 'block';
+        return;
+    }
 
-            loginForm.style.display = loginForm.style.display === 'none' ? 'block' : 'none';
-            signupForm.style.display = signupForm.style.display === 'none' ? 'block' : 'none';
-            loginError.style.display = 'none';
-            signupError.style.display = 'none';
-        }
+    if (isNaN(age) || age < 1 || age > 120) {
+        errorDiv.textContent = 'נא להזין גיל תקין (1-120)';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    // הוספת המשתמש החדש
+    users[username] = {
+        password: password,
+        isAdmin: false,
+        age: age,
+        ageGroup: age >= 35 ? 'מבוגר' : 'צעיר'
+    };
+    localStorage.setItem('users', JSON.stringify(users));
+
+    alert('ההרשמה בוצעה בהצלחה!');
+    toggleForms();
+    document.getElementById('username').value = username;
+    document.getElementById('password').value = password;
+}
+
+function toggleForms() {
+    const loginForm = document.getElementById('loginForm');
+    const signupForm = document.getElementById('signupForm');
+    
+    if (loginForm.style.display === 'none') {
+        loginForm.style.display = 'block';
+        signupForm.style.display = 'none';
+    } else {
+        loginForm.style.display = 'none';
+        signupForm.style.display = 'block';
+    }
+}
     </script>
 </body>
 </html>
