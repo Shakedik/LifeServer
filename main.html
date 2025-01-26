@@ -55,7 +55,6 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(255, 0, 0, 0.9);
             color: white;
             font-size: 48px;
             align-items: center;
@@ -68,12 +67,20 @@
             top: 20px;
             right: 20px;
             background: white;
-            color: red;
-            border: none;
             padding: 10px 20px;
             font-size: 20px;
             cursor: pointer;
             border-radius: 5px;
+            border: none;
+        }
+        .close-button:hover {
+            opacity: 0.9;
+        }
+        .alert[style*="255, 0, 0"] .close-button {
+            color: red;
+        }
+        .alert[style*="255, 165, 0"] .close-button {
+            color: orange;
         }
         .success-message {
             display: none;
@@ -84,6 +91,66 @@
         #cancelFloorLift {
             background-color: #f44336;
             margin-top: 10px;
+        }
+        .action-buttons {
+            display: inline-flex;
+            gap: 5px;
+            margin-right: 10px;
+        }
+        .icon-button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            font-size: 16px;
+            transition: opacity 0.2s;
+        }
+        .icon-button:hover {
+            opacity: 0.7;
+        }
+        .edit-form {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            z-index: 1000;
+            width: 90%;
+            max-width: 400px;
+        }
+        .edit-form h3 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .edit-form .form-group {
+            margin-bottom: 15px;
+        }
+        .edit-form input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .edit-form .button {
+            width: 100%;
+            margin-top: 10px;
+        }
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            backdrop-filter: blur(2px);
         }
     </style>
 </head>
@@ -100,6 +167,7 @@
         <thead>
             <tr>
                 <th>משתמש</th>
+                <th>קבוצת גיל</th>
                 <th>מצב</th>
                 <th>זמן עדכון אחרון</th>
                 <th>הרמת רצפה</th>
@@ -122,26 +190,41 @@
     </div>
 
     <script>
-        // משתנים גלובליים
-        let users = [
-            { name: "shira", status: "בטוח", lastUpdate: "", floorLift: "לא נדרש", drownings: 0 },
-            { name: "yael", status: "בטוח", lastUpdate: "", floorLift: "לא נדרש", drownings: 0 },
-            { name: "lital", status: "בטוח", lastUpdate: "", floorLift: "לא נדרש", drownings: 0 },
-            { name: "moi", status: "בטוח", lastUpdate: "", floorLift: "לא נדרש", drownings: 0 }
-        ];
+        let users = [];
 
-        // טעינת נתוני טביעות שמורים
-        const savedDrownings = sessionStorage.getItem('userDrownings');
-        if (savedDrownings) {
-            const drowningsData = JSON.parse(savedDrownings);
-            users.forEach(user => {
-                if (drowningsData[user.name]) {
-                    user.drownings = drowningsData[user.name];
-                }
-            });
+        if (!sessionStorage.getItem('currentUser')) {
+            window.location.href = 'index.html';
         }
 
-        // בדיקה האם המשתמש הוא מנהל והוספת כפתור איפוס אם כן
+        function loadUsers() {
+            const storedUsers = JSON.parse(localStorage.getItem('users') || '{}');
+            users = Object.keys(storedUsers)
+                .filter(username => username !== 'shaked')
+                .map(username => ({
+                    name: username,
+                    ageGroup: storedUsers[username].ageGroup || 'צעיר',
+                    status: "בטוח",
+                    lastUpdate: "",
+                    floorLift: "לא נדרש",
+                    drownings: 0
+                }));
+        }
+
+        function loadDrownings() {
+            const savedDrownings = sessionStorage.getItem('userDrownings');
+            if (savedDrownings) {
+                const drowningsData = JSON.parse(savedDrownings);
+                users.forEach(user => {
+                    if (drowningsData[user.name]) {
+                        user.drownings = drowningsData[user.name];
+                    }
+                });
+            }
+        }
+
+        loadUsers();
+        loadDrownings();
+
         if (sessionStorage.getItem('isAdmin') === 'true') {
             const resetButton = document.createElement('button');
             resetButton.className = 'button';
@@ -153,13 +236,9 @@
 
         function resetDrownings() {
             if (sessionStorage.getItem('isAdmin') === 'true') {
-                // איפוס מספר הטביעות
                 users.forEach(user => user.drownings = 0);
                 saveDrownings();
-                
-                // איפוס היסטוריית הטביעות בשביל הגרף
                 sessionStorage.setItem('drowningHistory', JSON.stringify([]));
-                
                 updateTable();
                 alert('מונה הטביעות אופס בהצלחה');
             }
@@ -176,13 +255,9 @@
         function checkTotalDrownings() {
             const totalDrownings = users.reduce((sum, user) => sum + user.drownings, 0);
             if (totalDrownings >= 55) {
-                // איפוס מספר הטביעות
                 users.forEach(user => user.drownings = 0);
                 saveDrownings();
-                
-                // איפוס היסטוריית הטביעות בשביל הגרף
                 sessionStorage.setItem('drowningHistory', JSON.stringify([]));
-                
                 updateTable();
                 alert('הגעת למקסימום טביעות מותר. המונה אופס אוטומטית.');
             }
@@ -194,7 +269,14 @@
             users.forEach(user => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td>${user.name}</td>
+                    <td>
+                        <span class="user-name">${user.name}</span>
+                        <div class="action-buttons">
+                            <button onclick="editUser('${user.name}')" class="icon-button edit-btn">✏️</button>
+                            <button onclick="deleteUser('${user.name}')" class="icon-button delete-btn">🗑️</button>
+                        </div>
+                    </td>
+                    <td>${user.ageGroup}</td>
                     <td class="${user.status === 'בטוח' ? 'safe' : 'drowning'}">${user.status}</td>
                     <td>${new Date().toLocaleTimeString()}</td>
                     <td>${user.floorLift}</td>
@@ -205,15 +287,13 @@
         }
 
         function simulateDrowning() {
-            // בחירת משתמש רנדומלי
-            const randomUser = users[Math.floor(Math.random() * users.length)];
+            if (users.length === 0) return;
             
-            // עדכון סטטוס
+            const randomUser = users[Math.floor(Math.random() * users.length)];
             randomUser.status = "טביעה";
             randomUser.floorLift = "נדרש";
             randomUser.drownings++;
             
-            // שמירת הטביעה בהיסטוריה
             const drowningHistory = JSON.parse(sessionStorage.getItem('drowningHistory') || '[]');
             drowningHistory.push({
                 user: randomUser.name,
@@ -222,24 +302,23 @@
             });
             sessionStorage.setItem('drowningHistory', JSON.stringify(drowningHistory));
             
-            // שמירת מספר הטביעות המעודכן
             saveDrownings();
-            
-            // בדיקת סך הטביעות
             checkTotalDrownings();
-            
-            // עדכון הטבלה
             updateTable();
 
-            // הצגת התראה
             const alert = document.getElementById('drowningAlert');
+            alert.style.backgroundColor = randomUser.ageGroup === 'מבוגר' ? 'rgba(255, 165, 0, 0.9)' : 'rgba(255, 0, 0, 0.9)';
+            alert.innerHTML = `
+                <button class="close-button" onclick="closeAlert()">סגור X</button>
+                <div>טביעה בזמן אמת!</div>
+                <div style="font-size: 32px; margin-top: 20px;">
+                    ${randomUser.ageGroup === 'מבוגר' ? 'מבוגר בסכנת טביעה!' : 'ילד בסכנת טביעה!'}
+                </div>
+            `;
             alert.style.display = 'flex';
 
-            // הסתרת המסך האדום אחרי 5 שניות
             setTimeout(() => {
                 alert.style.display = 'none';
-
-                // אחרי 5 שניות נוספות החזרה למצב רגיל
                 setTimeout(() => {
                     randomUser.status = "בטוח";
                     randomUser.floorLift = "לא נדרש";
@@ -247,7 +326,6 @@
                 }, 5000);
             }, 5000);
 
-            // קביעת זמן רנדומלי לטביעה הבאה (בין 10 ל-20 שניות)
             const nextDrowningTime = Math.floor(Math.random() * (20000 - 10000 + 1)) + 10000;
             setTimeout(simulateDrowning, nextDrowningTime);
         }
@@ -266,15 +344,95 @@
             alert('הפעולה בוצעה בהצלחה');
         }
 
-        function logout() {
-            sessionStorage.clear();  // ניקוי כל המידע בעת התנתקות
-            window.location.href = 'login.html';
+        function editUser(username) {
+            const users = JSON.parse(localStorage.getItem('users'));
+            const user = users[username];
+            
+            const overlay = document.createElement('div');
+            overlay.className = 'overlay';
+            
+            const editForm = document.createElement('div');
+            editForm.className = 'edit-form';
+            editForm.innerHTML = `
+                <h3>עריכת משתמש</h3>
+                <div class="form-group">
+                    <label>שם משתמש:</label>
+                    <input type="text" id="editUsername" value="${username}">
+                </div>
+                <div class="form-group">
+                    <label>גיל:</label>
+                    <input type="number" id="editAge" value="${user.age}" min="1" max="120">
+                </div>
+                <button class="button" onclick="saveUserEdit('${username}')">שמור</button>
+                <button class="button" style="background-color: #f44336; margin-top: 10px;" onclick="closeEditForm()">ביטול</button>
+            `;
+            
+            document.body.appendChild(overlay);
+            document.body.appendChild(editForm);
+            overlay.style.display = 'block';
+            editForm.style.display = 'block';
         }
 
-        // עדכון ראשוני של הטבלה
-        updateTable();
+        function saveUserEdit(oldUsername) {
+            const newUsername = document.getElementById('editUsername').value;
+            const newAge = parseInt(document.getElementById('editAge').value);
+            const users = JSON.parse(localStorage.getItem('users'));
+            
+            if (newUsername !== oldUsername && users[newUsername]) {
+                alert('שם המשתמש כבר קיים במערכת');
+                return;
+            }
+            
+            if (newUsername.length < 3) {
+                alert('שם המשתמש חייב להכיל לפחות 3 תווים');
+                return;
+            }
 
-        // התחלת הסימולציה עם הזמן הראשוני
+            if (isNaN(newAge) || newAge < 1 || newAge > 120) {
+                alert('נא להזין גיל תקין (1-120)');
+                return;
+            }
+            
+            const userData = users[oldUsername];
+            userData.age = newAge;
+            userData.ageGroup = newAge >= 35 ? 'מבוגר' : 'צעיר';
+            
+            if (newUsername !== oldUsername) {
+                delete users[oldUsername];
+                users[newUsername] = userData;
+            }
+            
+            localStorage.setItem('users', JSON.stringify(users));
+            closeEditForm();
+            loadUsers();
+            loadDrownings();
+            updateTable();
+        }
+
+        function closeEditForm() {
+            const overlay = document.querySelector('.overlay');
+            const editForm = document.querySelector('.edit-form');
+            if (overlay) overlay.remove();
+            if (editForm) editForm.remove();
+        }
+
+        function deleteUser(username) {
+            if (confirm('האם אתה בטוח שברצונך למחוק משתמש זה?')) {
+                const users = JSON.parse(localStorage.getItem('users'));
+                delete users[username];
+                localStorage.setItem('users', JSON.stringify(users));
+                loadUsers();
+                loadDrownings();
+                updateTable();
+            }
+        }
+
+        function logout() {
+            sessionStorage.clear();
+            window.location.href = 'index.html';
+        }
+
+        updateTable();
         setTimeout(simulateDrowning, Math.floor(Math.random() * (20000 - 10000 + 1)) + 10000);
     </script>
 </body>
